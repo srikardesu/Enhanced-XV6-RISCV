@@ -105,6 +105,8 @@ extern uint64 sys_wait(void);
 extern uint64 sys_waitx(void);
 extern uint64 sys_write(void);
 extern uint64 sys_uptime(void);
+extern uint64 sys_trace(void);
+extern uint64 sys_setpriority(void);
 
 static uint64 (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -128,8 +130,39 @@ static uint64 (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
-[SYS_waitx]   sys_waitx
+[SYS_waitx]   sys_waitx,
+[SYS_trace]   sys_trace,
+[SYS_setpriority] sys_setpriority
 };
+
+char *syscallnames[] = {
+[SYS_fork]    "fork",
+[SYS_exit]    "exit",
+[SYS_wait]    "wait",
+[SYS_pipe]    "pipe",
+[SYS_read]    "read",
+[SYS_kill]    "kill",
+[SYS_exec]    "exec",
+[SYS_fstat]   "fstat",
+[SYS_chdir]   "chdir",
+[SYS_dup]     "dup",
+[SYS_getpid]  "getpid",
+[SYS_sbrk]    "sbrk",
+[SYS_sleep]   "sleep",
+[SYS_uptime]  "uptime",
+[SYS_open]    "open",
+[SYS_write]   "write",
+[SYS_mknod]   "mknod",
+[SYS_unlink]  "unlink",
+[SYS_link]    "link",
+[SYS_mkdir]   "mkdir",
+[SYS_close]   "close",
+[SYS_waitx]   "waitx",
+[SYS_trace]   "trace",
+[SYS_setpriority] "setpriority"
+};
+
+int numofargs[25] = {0,1,1,1,1,3,1,2,2,1,1,0,1,1,0,2,3,3,1,2,1,1,2,1,2};
 
 void
 syscall(void)
@@ -138,11 +171,33 @@ syscall(void)
   struct proc *p = myproc();
 
   num = p->trapframe->a7;
+  int retval;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+    argint(0,&retval);
     p->trapframe->a0 = syscalls[num]();
+    //if((p->mask & (1 << num)))
+    //printf(") -> %d\n",p->trapframe->a0);
+    // trace
   } else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);
     p->trapframe->a0 = -1;
   }
+  if((p->mask & (1 << num))) {
+    printf("%d: syscall %s (",  p->pid, syscallnames[num]);
+    if(numofargs[num]!=1)
+    printf("%d ",retval);
+    else
+    printf("%d",retval);
+    for(int i=1;i<numofargs[num];i++) {
+      int n; argint(i,&n);
+      if(i==numofargs[num]-1) printf("%d",n);
+      else printf("%d ",n);
+    }
+    printf(") -> %d\n",p->trapframe->a0);
+    //p->trapframe->a0 = syscalls[num]();
+  }
+  //if(p->mask)
+  //printf("syscall num is: %d\n",num);
+  //printf("p-> mask is: %d\n",p->mask);
 }

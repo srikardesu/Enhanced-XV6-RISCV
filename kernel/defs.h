@@ -8,6 +8,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+extern int q_ticks_max[5];
 
 // bio.c
 void            binit(void);
@@ -106,6 +107,10 @@ int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
 void            update_time(void);
+void            change_q_flag(struct proc* p);
+void            incr_curr_ticks(struct proc *p);
+int             trace(int);
+int             setpriority(int,int);
 
 // swtch.S
 void            swtch(struct context*, struct context*);

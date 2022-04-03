@@ -56,7 +56,11 @@ LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
 
-CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb
+ifndef SCHEDULER
+SCHEDULER = RR
+endif
+
+CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb -D $(SCHEDULER)
 CFLAGS += -MD
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
@@ -70,6 +74,27 @@ endif
 ifneq ($(shell $(CC) -dumpspecs 2>/dev/null | grep -e '[^f]nopie'),)
 CFLAGS += -fno-pie -nopie
 endif
+
+# ifndef SCHEDULER
+# SCHEDULER := RR
+# endif
+# SCHED_MACRO = -D SCHEDULER=SCHED_RR
+
+# ifeq ($(SCHEDULER), FCFS)
+# SCHED_MACRO = -D SCHEDULER=SCHED_FCFS
+# endif
+
+# ifeq ($(SCHEDULER), PBS)
+# SCHED_MACRO = -D SCHEDULER=SCHED_PBS
+# endif
+
+# ifeq ($(SCHEDULER), MLFQ)
+# SCHED_MACRO = -D SCHEDULER=SCHED_MLFQ
+# endif
+
+
+
+# CFLAGS += $(SCHED_MACRO)
 
 LDFLAGS = -z max-page-size=4096
 
@@ -133,6 +158,9 @@ UPROGS=\
 	$U/_grind\
 	$U/_wc\
 	$U/_zombie\
+	$U/_schedulertest\
+	$U/_strace\
+	$U/_priority\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
@@ -170,4 +198,3 @@ qemu: $K/kernel fs.img
 qemu-gdb: $K/kernel .gdbinit fs.img
 	@echo "*** Now run 'gdb' in another window." 1>&2
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
-

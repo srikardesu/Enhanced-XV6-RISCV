@@ -82,7 +82,36 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-// Per-process state
+// // Per-process state
+// struct proc {
+//   struct spinlock lock;
+
+//   // p->lock must be held when using these:
+//   enum procstate state;        // Process state
+//   void *chan;                  // If non-zero, sleeping on chan
+//   int killed;                  // If non-zero, have been killed
+//   int xstate;                  // Exit status to be returned to parent's wait
+//   int pid;                     // Process ID
+
+//   // wait_lock must be held when using this:
+//   struct proc *parent;         // Parent process
+
+//   // these are private to the process, so p->lock need not be held.
+//   uint64 kstack;               // Virtual address of kernel stack
+//   uint64 sz;                   // Size of process memory (bytes)
+//   pagetable_t pagetable;       // User page table
+//   struct trapframe *trapframe; // data page for trampoline.S
+//   struct context context;      // swtch() here to run process
+//   struct file *ofile[NOFILE];  // Open files
+//   struct inode *cwd;           // Current directory
+//   char name[16];               // Process name (debugging)
+
+//   uint rtime;                   // How long the process ran for
+//   uint ctime;                   // When was the process created 
+//   uint etime;                   // When did the process exited
+// };
+
+
 struct proc {
   struct spinlock lock;
 
@@ -92,6 +121,7 @@ struct proc {
   int killed;                  // If non-zero, have been killed
   int xstate;                  // Exit status to be returned to parent's wait
   int pid;                     // Process ID
+  int mask;                    // Added mask for trace
 
   // wait_lock must be held when using this:
   struct proc *parent;         // Parent process
@@ -105,8 +135,24 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  uint ctime;
+  uint rtime;
+  uint etime; 
+  uint priority;                  // stores static priority
+  uint schedno;                   // stores number of times it has been scheduled since allocation
+  uint lastscheduled;             // stores the time that it has been last scheduled
+  uint lastrun;                   // stores amount of time it has run since it has last been scheduled
+  uint nice;                      // stores niceness maybe used later
+  uint sleep_last;                // stores last time it slept since last scheduled
+  uint sleeptime;                 // stores amount of time it slept since last scheduled
+  uint runnable;
 
-  uint rtime;                   // How long the process ran for
-  uint ctime;                   // When was the process created 
-  uint etime;                   // When did the process exited
+  uint entry;
+  uint qno;
+  uint change_queue;
+  uint queue;
+  uint ticks[5];
+  uint last_executed;
+  uint num_run;
+  uint last_enqueue_tick;
 };
